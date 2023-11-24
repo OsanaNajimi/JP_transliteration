@@ -6,7 +6,7 @@
 
 #define STRLEN 1000
 
-const char Gojyuon[17][5][4] =
+const char Gojuon[17][5][4] =
 {
     {
         "あ","い","う","え","お"
@@ -68,32 +68,27 @@ const char punctuation[6] = "-,.?!";
 const char punctuation_jp[16] = "ー、。？！";
 
 int whichLongVowel(char c1, char c2){
-    for(int i=0;i<strlen(vowels);i++){
-        if(c1 == longvowels[i*2] && c2 == longvowels[i*2+1]){
+    for(int i=0;i<strlen(vowels);i++)
+        if(c1 == longvowels[i*2] && c2 == longvowels[i*2+1])
             return i;
-        }
-    }
     return -1;
 }
 
 int whichPunctuation(char c){
-    for(int i=0;i<strlen(punctuation);i++){
-        if(c == punctuation[i]){
+    for(int i=0;i<strlen(punctuation);i++)
+        if(c == punctuation[i])
             return i;
-        }
-    }
     return -1;
 }
 
-int nandan(char c){
-    for(int i=0;i<5;i++){
+int whichVowel(char c){
+    for(int i=0;i<5;i++)
         if(c == vowels[i])
             return i;
-    }
     return -1;
 }
 
-int nangyou(char str[STRLEN], int i, int j){
+int whichConsonants(char str[STRLEN], int i, int j){
     if(j == 0)
         return 0;
     if(j == 1){
@@ -135,25 +130,27 @@ int nangyou(char str[STRLEN], int i, int j){
     return -1;
 }
 
-char* gojyuon(char str[STRLEN], int i, int j){
+char* gojuon(char str[STRLEN], int i, int j){
     char *kana = calloc(10, sizeof(char));
-    if(j > 0 && str[i] == str[i+1]){
-        strcat(kana, Gojyuon[16][2]);
+    if(j > 0 && str[i] == str[i+1]){ 
+        //促音
+        strcat(kana, Gojuon[16][2]);
         i++;
         j--;
     }
-    int dan = nandan(str[i+j]);
-    int gyou = nangyou(str, i, j);
-    if(dan < 0 || gyou < 0){
+    int vowel = whichVowel(str[i+j]);
+    int consonant = whichConsonants(str, i, j);
+    if(vowel < 0 || consonant < 0){
         free(kana);
         return NULL;
     }
-    if(gyou < 15){
-        strcat(kana, Gojyuon[gyou][dan]);
+    if(consonant < 15){
+        strcat(kana, Gojuon[consonant][vowel]);
     }
     else{
-        strcat(kana,Gojyuon[gyou-100][1]);
-        strcat(kana,Gojyuon[15][dan]);
+        //抝音
+        strcat(kana,Gojuon[consonant-100][1]);
+        strcat(kana,Gojuon[15][vowel]);
     }
     return kana;
 }
@@ -178,7 +175,7 @@ char* preprocess(char raw[STRLEN]){
                 if(raw[i] == 'n'){
                     if(i+1 == strlen(raw))
                         is_n = true;
-                    if(nandan(raw[i+1]) < 0 && raw[i+1] != 'y' && raw[i+1] != 'n' && raw[i-1] != 'n')
+                    if(whichVowel(raw[i+1]) < 0 && raw[i+1] != 'y' && raw[i+1] != 'n' && raw[i-1] != 'n')
                         if(i+2 == strlen(raw) || whichLongVowel(raw[i+1],raw[i+2]) < 0)
                             is_n = true;
                 }
@@ -187,15 +184,16 @@ char* preprocess(char raw[STRLEN]){
                     str[j++] = 'n';
                 }
                 else{
-                    if(raw[i] == 'e' && raw[i-1] == ' ' && (i+2 == strlen(raw) || !isalpha(raw[i+1])))
+                    if(raw[i] == 'e' && i != 0 && raw[i-1] == ' ' && (i+2 == strlen(raw) || !isalpha(raw[i+1])))
+                        //還原へ
                         str[j++] = 'h';
-                    if(raw[i] == 'w' && raw[i-1] == ' ' && i+2 < strlen(raw) && raw[i+1] == 'a' && (i+3 == strlen(raw) || !isalpha(raw[i+2])))
+                    if(raw[i] == 'w' && i != 0 && raw[i-1] == ' ' && i+2 < strlen(raw) && raw[i+1] == 'a' && (i+3 == strlen(raw) || !isalpha(raw[i+2])))
+                        //還原は
                         raw[i] = 'h';
                     str[j++] = raw[i];
                 }
                 i++;
-            }
-                
+            }     
         }
         else
             i++;
@@ -221,10 +219,10 @@ char* transliterate(char raw[STRLEN]){
             }
             else{
                 int j = 0;
-                while(i + j < strlen(str) && nandan(str[i+j]) < 0){
+                while(i + j < strlen(str) && whichVowel(str[i+j]) < 0){
                     j++;
                 }
-                char* kana = gojyuon(str,i,j);
+                char* kana = gojuon(str,i,j);
                 if(kana == NULL){
                     printf("%s\n",str_kana);
                     free(str);
